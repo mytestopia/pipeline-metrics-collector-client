@@ -1,6 +1,6 @@
 # pipeline-metrics-collector-client
 
-Python-based worker collects data from gitlab API about pepine duration and e2e jobs data and send request to 
+Python-based worker collects data from gitlab API about pipeline duration and e2e jobs data and send request to 
 [pipeline-metrics-collector](https://github.com/mytestopia/pipeline-metrics-collector) API
 
 To separate the time of running tests in a job from the time of setting the environment ("up" from "e2e), 
