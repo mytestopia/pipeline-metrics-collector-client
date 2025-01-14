@@ -25,6 +25,7 @@ class GitLab:
                  stage_build: str,
                  jobs_build: List[str],
                  stage_e2e: str,
+                 stage_e2e_metrics: str,
                  jobs_e2e_blacklist: List[str],
                  job_steps: List[str],
                  is_optimistic: bool):
@@ -35,6 +36,7 @@ class GitLab:
         self.JOBS_BUILD = jobs_build
 
         self.STAGE_E2E = stage_e2e
+        self.stage_e2e_metrics = stage_e2e_metrics
         self.JOBS_E2E_BLACKLIST = jobs_e2e_blacklist
 
         self.JOBS_STEPS = job_steps
@@ -53,6 +55,13 @@ class GitLab:
             if job.attributes['stage'] == self.STAGE_E2E \
                     and job.attributes['name'] not in self.JOBS_E2E_BLACKLIST:
                 e2e_jobs.append(job)
+        return e2e_jobs
+
+    def get_all_e2e_jobs(self, jobs: List[ProjectPipelineJob]) -> List[ProjectPipelineJob]:
+        e2e_jobs = list()
+        for job in jobs:
+            if job.attributes['stage'] == self.STAGE_E2E or job.attributes['stage'] == self.stage_e2e_metrics:
+                e2e_jobs.append(job.name)
         return e2e_jobs
 
     def filter_e2e_build_job(self, jobs: List[ProjectPipelineJob]) -> List[ProjectPipelineJob]:
@@ -122,6 +131,7 @@ class GitLab:
         stats = dict()
 
         jobs = self.get_jobs(pipeline)
+        stats['all_e2e_jobs'] = self.get_all_e2e_jobs(jobs)
 
         e2e_jobs = self.filter_e2e_jobs(jobs)
         stats['jobs'] = self.get_e2e_job_statistics(e2e_jobs)

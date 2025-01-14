@@ -52,6 +52,8 @@ if __name__ == '__main__':
     
     ap.add_argument('--stage-e2e', nargs='?', type=str, default='test',
                     help='Name of stage, where e2e tests run. Default: test')
+    ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='pipeline-metrics',
+                    help='Name of stage, where e2e test statistics are collected. Default: pipeline-metrics')
     ap.add_argument('--jobs-e2e-blacklist', nargs='*', default=['coverage', 'e2e-lint', 'e2e:lint', 'unit'],
                     help='Name of jobs in stage to be excluded from statistics '
                          '(for example jobs with unit tests with linter). '
@@ -83,14 +85,15 @@ if __name__ == '__main__':
     jobs_build = args_dict['jobs_build']
 
     stage_e2e = args_dict['stage_e2e']
+    stage_e2e_metrics = args_dict['stage_e2e_metrics']
     jobs_e2e_blacklist = args_dict['jobs_e2e_blacklist']
 
     job_steps = args_dict['job_steps_names']
 
     gitlab = GitLab(project_id, private_token,
                     stage_build, jobs_build,
-                    stage_e2e, jobs_e2e_blacklist,
-                    job_steps,
+                    stage_e2e, stage_e2e_metrics,
+                    jobs_e2e_blacklist, job_steps,
                     is_optimistic=args_dict['optimistic'])
 
     if args_dict['pipeline_id']:
