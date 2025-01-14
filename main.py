@@ -52,8 +52,8 @@ if __name__ == '__main__':
     
     ap.add_argument('--stage-e2e', nargs='?', type=str, default='test',
                     help='Name of stage, where e2e tests run. Default: test')
-    ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='pipeline-metrics',
-                    help='Name of stage, where e2e test statistics are collected. Default: pipeline-metrics')
+    ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='test-metrics',
+                    help='Name of stage, where e2e test statistics are collected. Default: test-metrics')
     ap.add_argument('--jobs-e2e-blacklist', nargs='*', default=['coverage', 'e2e-lint', 'e2e:lint', 'unit'],
                     help='Name of jobs in stage to be excluded from statistics '
                          '(for example jobs with unit tests with linter). '

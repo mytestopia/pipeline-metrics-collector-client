@@ -57,7 +57,7 @@ class GitLab:
                 e2e_jobs.append(job)
         return e2e_jobs
 
-    def get_all_e2e_jobs(self, jobs: List[ProjectPipelineJob]) -> List[ProjectPipelineJob]:
+    def filter_all_e2e_jobs_names(self, jobs: List[ProjectPipelineJob]) -> List[ProjectPipelineJob]:
         e2e_jobs = list()
         for job in jobs:
             if job.attributes['stage'] == self.STAGE_E2E or job.attributes['stage'] == self.stage_e2e_metrics:
@@ -131,7 +131,7 @@ class GitLab:
         stats = dict()
 
         jobs = self.get_jobs(pipeline)
-        stats['all_e2e_jobs'] = self.get_all_e2e_jobs(jobs)
+        stats['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
 
         e2e_jobs = self.filter_e2e_jobs(jobs)
         stats['jobs'] = self.get_e2e_job_statistics(e2e_jobs)
