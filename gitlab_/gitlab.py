@@ -36,7 +36,7 @@ class GitLab:
         self.JOBS_BUILD = jobs_build
 
         self.STAGE_E2E = stage_e2e
-        self.stage_e2e_metrics = stage_e2e_metrics
+        self.STAGE_E2E_METRICS = stage_e2e_metrics
         self.JOBS_E2E_BLACKLIST = jobs_e2e_blacklist
 
         self.JOBS_STEPS = job_steps
@@ -60,7 +60,7 @@ class GitLab:
     def filter_all_e2e_jobs_names(self, jobs: List[ProjectPipelineJob]) -> List[ProjectPipelineJob]:
         e2e_jobs = list()
         for job in jobs:
-            if job.attributes['stage'] == self.STAGE_E2E or job.attributes['stage'] == self.stage_e2e_metrics:
+            if job.attributes['stage'] == self.STAGE_E2E or job.attributes['stage'] == self.STAGE_E2E_METRICS:
                 e2e_jobs.append(job.name)
         return e2e_jobs
 
