@@ -43,6 +43,14 @@ class GitLab:
 
         self.error_logger = ErrorLogger(is_optimistic)
 
+    def get_project_schedules(self) -> list[dict]:
+        all_schedules_info = self.project.pipelineschedules.list(all=True)
+        schedules = [{
+            'name': schedule.description,
+            'is_active': schedule.active,
+        } for schedule in all_schedules_info]
+        return schedules
+
     def get_pipelines(self, **kwargs):
         return self.project.pipelines.list(**kwargs)
 
@@ -165,4 +173,5 @@ class GitLab:
         stats['jobs_failed'] = failed_stats
         stats['has_restarts'] = True if failed_stats else False
 
+        stats['schedules'] = self.get_project_schedules()
         return stats
