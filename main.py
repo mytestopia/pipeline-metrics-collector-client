@@ -52,8 +52,7 @@ if __name__ == '__main__':
     
     ap.add_argument('--stage-e2e', nargs='?', type=str, default='test',
                     help='Name of stage, where e2e tests run. Default: test')
-    ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='test-metrics',
-                    help='Name of stage, where e2e test statistics are collected. Default: test-metrics')
+
     ap.add_argument('--jobs-e2e-blacklist', nargs='*', default=['coverage', 'e2e-lint', 'e2e:lint', 'unit'],
                     help='Name of jobs in stage to be excluded from statistics '
                          '(for example jobs with unit tests with linter). '
@@ -68,6 +67,24 @@ if __name__ == '__main__':
 
     ap.add_argument('--optimistic', action='store_true',
                     help='Not fail metrics collecting if some of jobs don\'t have any')
+
+    ap.add_argument('--able-to-save-project-info', nargs='?', type=bool, default=False,
+                    help='Enable to save all e2e jobs, schedules and versions of installed packages to db from master. '
+                         'Default: False')
+    
+    ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='test-metrics',
+                    help='Name of stage, where e2e test statistics are collected. '
+                         'Works with --able-to-save-project-info=True and branch=master ONLY. Default: test-metrics')
+    
+    ap.add_argument('--requirements_txt_path', nargs='?', type=str, default='tests/e2e/requirements.txt',
+                    help='Set path to requirements.txt file. '
+                         'Works with --able-to-save-project-info=True and branch=master ONLY.'
+                         'Default: tests/e2e/requirements.txt')
+    
+    ap.add_argument('--requirements_in_path', nargs='?', type=str, default='tests/e2e/requirements.in',
+                    help='Set path to requirements.in file. '
+                         'Works with --able-to-save-project-info=True and branch=master ONLY.'
+                         'Default: tests/e2e/requirements.in')
 
     args = ap.parse_args()
     args_dict = dict()
@@ -85,16 +102,24 @@ if __name__ == '__main__':
     jobs_build = args_dict['jobs_build']
 
     stage_e2e = args_dict['stage_e2e']
-    stage_e2e_metrics = args_dict['stage_e2e_metrics']
     jobs_e2e_blacklist = args_dict['jobs_e2e_blacklist']
 
     job_steps = args_dict['job_steps_names']
 
-    gitlab = GitLab(project_id, private_token,
-                    stage_build, jobs_build,
-                    stage_e2e, stage_e2e_metrics,
-                    jobs_e2e_blacklist, job_steps,
-                    is_optimistic=args_dict['optimistic'])
+    gitlab = GitLab(
+        project_id=project_id,
+        private_token=private_token,
+        stage_build=stage_build,
+        jobs_build=jobs_build,
+        stage_e2e=stage_e2e,
+        jobs_e2e_blacklist=jobs_e2e_blacklist,
+        job_steps=job_steps,
+        is_optimistic=args_dict['optimistic'],
+        able_to_save_project_info=args_dict['able_to_save_project_info'],
+        stage_e2e_metrics=args_dict['stage_e2e_metrics'],
+        requirements_txt_path=args_dict['requirements_txt_path'],
+        requirements_in_path=args_dict['requirements_in_path'],
+    )
 
     if args_dict['pipeline_id']:
         collect_statistic_for_pipeline(gitlab,

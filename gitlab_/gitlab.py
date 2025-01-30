@@ -3,6 +3,9 @@ from typing import List, Dict
 import gitlab
 from gitlab_ import get_job_stats_by_trace
 from gitlab.v4.objects import ProjectPipelineJob, ProjectJob
+import base64
+from helpers.parse_packages_from_requirements import parse_packages_names_from_requirements_in, \
+    parse_packages_info_from_requirements_txt
 
 
 class ErrorLogger:
@@ -25,10 +28,14 @@ class GitLab:
                  stage_build: str,
                  jobs_build: List[str],
                  stage_e2e: str,
-                 stage_e2e_metrics: str,
                  jobs_e2e_blacklist: List[str],
                  job_steps: List[str],
-                 is_optimistic: bool):
+                 is_optimistic: bool,
+                 able_to_save_project_info: bool,
+                 stage_e2e_metrics: str,
+                 requirements_txt_path: str,
+                 requirements_in_path: str,
+                 ):
         self.server = gitlab.Gitlab(url=self._SERVER_URL, private_token=private_token)
         self.project = self.server.projects.get(id=project_id)
 
@@ -36,10 +43,14 @@ class GitLab:
         self.JOBS_BUILD = jobs_build
 
         self.STAGE_E2E = stage_e2e
-        self.STAGE_E2E_METRICS = stage_e2e_metrics
         self.JOBS_E2E_BLACKLIST = jobs_e2e_blacklist
 
         self.JOBS_STEPS = job_steps
+
+        self.ABLE_TO_SAVE_PROJECT_INFO = able_to_save_project_info
+        self.STAGE_E2E_METRICS = stage_e2e_metrics
+        self.REQUIREMENTS_TXT_PATH = requirements_txt_path
+        self.REQUIREMENTS_IN_PATH = requirements_in_path
 
         self.error_logger = ErrorLogger(is_optimistic)
 
@@ -135,12 +146,36 @@ class GitLab:
 
         return self.get_e2e_job_statistics(e2e_failed_jobs, is_passed=False)
 
+    def get_gitlab_file_content(self, file_path: str, ref: str = 'master') -> str or None:
+        try:
+            file = self.project.files.get(file_path=file_path, ref=ref)
+            file_content = base64.b64decode(file.content).decode("utf-8")
+            return file_content
+
+        except gitlab.exceptions.GitlabGetError as e:
+            print(f"Failed to fetch file ({file_path}): {e}")
+            return None
+
+    def get_packages_versions(self) -> dict:
+        req_txt_file_content = self.get_gitlab_file_content(self.REQUIREMENTS_TXT_PATH)
+        req_in_file_content = self.get_gitlab_file_content(self.REQUIREMENTS_IN_PATH)
+
+        if not req_txt_file_content:
+            return dict()
+
+        packages_names = parse_packages_names_from_requirements_in(
+            file_content=req_in_file_content) if req_in_file_content else None
+
+        packages_with_versions = parse_packages_info_from_requirements_txt(
+            file_content=req_txt_file_content, included_packages=packages_names
+        )
+
+        return packages_with_versions
+
     def get_statistics(self, pipeline) -> Dict or None:
         stats = dict()
 
         jobs = self.get_jobs(pipeline)
-        stats['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
-
         e2e_jobs = self.filter_e2e_jobs(jobs)
         stats['jobs'] = self.get_e2e_job_statistics(e2e_jobs)
 
@@ -173,5 +208,10 @@ class GitLab:
         stats['jobs_failed'] = failed_stats
         stats['has_restarts'] = True if failed_stats else False
 
-        stats['schedules'] = self.get_project_schedules()
+        if self.ABLE_TO_SAVE_PROJECT_INFO and stats['ref'] == 'master' and \
+                pipeline.attributes['source'] != 'schedule':
+            stats['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
+            stats['schedules'] = self.get_project_schedules()
+            stats['packages'] = self.get_packages_versions()
+
         return stats
