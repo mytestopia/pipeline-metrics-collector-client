@@ -34,7 +34,7 @@ def parse_packages_names_from_requirements_in(file_content: str) -> list[str]:
         if line.startswith('git+'):
             package_info = parse_git_package_link(line)
         else:
-            package_info = re.split(r'==|>=|>|<=|<', line, 1)
+            package_info = re.split(r'==|>=|>|<=|<|~=', line, 1)
 
         if len(package_info) >= 1:
             packages_names.append(package_info[0])
