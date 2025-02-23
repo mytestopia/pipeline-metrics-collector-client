@@ -31,8 +31,7 @@ class GitLab:
                  stage_e2e_metrics: str,
                  jobs_e2e_blacklist: List[str],
                  job_steps: List[str],
-                 is_optimistic: bool,
-                 ):
+                 is_optimistic: bool):
         self.server = gitlab.Gitlab(url=self._SERVER_URL, private_token=private_token)
         self.project = self.server.projects.get(id=project_id)
 
