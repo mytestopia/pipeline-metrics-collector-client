@@ -28,13 +28,10 @@ class GitLab:
                  stage_build: str,
                  jobs_build: List[str],
                  stage_e2e: str,
+                 stage_e2e_metrics: str,
                  jobs_e2e_blacklist: List[str],
                  job_steps: List[str],
                  is_optimistic: bool,
-                 able_to_save_project_info: bool,
-                 stage_e2e_metrics: str,
-                 requirements_txt_path: str,
-                 requirements_in_path: str,
                  ):
         self.server = gitlab.Gitlab(url=self._SERVER_URL, private_token=private_token)
         self.project = self.server.projects.get(id=project_id)
@@ -43,14 +40,10 @@ class GitLab:
         self.JOBS_BUILD = jobs_build
 
         self.STAGE_E2E = stage_e2e
+        self.STAGE_E2E_METRICS = stage_e2e_metrics
         self.JOBS_E2E_BLACKLIST = jobs_e2e_blacklist
 
         self.JOBS_STEPS = job_steps
-
-        self.ABLE_TO_SAVE_PROJECT_INFO = able_to_save_project_info
-        self.STAGE_E2E_METRICS = stage_e2e_metrics
-        self.REQUIREMENTS_TXT_PATH = requirements_txt_path
-        self.REQUIREMENTS_IN_PATH = requirements_in_path
 
         self.error_logger = ErrorLogger(is_optimistic)
 
@@ -156,9 +149,9 @@ class GitLab:
             print(f"Failed to fetch file ({file_path}): {e}")
             return None
 
-    def get_packages_versions(self) -> dict:
-        req_txt_file_content = self.get_gitlab_file_content(self.REQUIREMENTS_TXT_PATH)
-        req_in_file_content = self.get_gitlab_file_content(self.REQUIREMENTS_IN_PATH)
+    def get_packages_versions(self, requirements_in_path: str, requirements_txt_path: str) -> dict:
+        req_in_file_content = self.get_gitlab_file_content(requirements_in_path)
+        req_txt_file_content = self.get_gitlab_file_content(requirements_txt_path)
 
         if not req_txt_file_content:
             return dict()
@@ -171,6 +164,22 @@ class GitLab:
         )
 
         return packages_with_versions
+
+    def get_commited_files(self, pipeline) -> list[str]:
+        commit_sha = pipeline.sha
+        commit = self.project.commits.get(commit_sha)
+        diff = commit.diff()
+
+        files = list()
+        for change in diff:
+            files.append(change['new_path'])
+            if change['new_path'] != change['old_path']:
+                files.append(change['old_path'])
+
+        return files
+
+    def find_first_match_in_list(self, substring: str, items: list[str]) -> str or None:
+        return next((s for s in items if substring in s), None)
 
     def get_statistics(self, pipeline) -> Dict or None:
         stats = dict()
@@ -207,11 +216,42 @@ class GitLab:
         failed_stats = self.get_statistics_failed(pipeline)
         stats['jobs_failed'] = failed_stats
         stats['has_restarts'] = True if failed_stats else False
-
-        if self.ABLE_TO_SAVE_PROJECT_INFO and stats['ref'] == 'master' and \
-                pipeline.attributes['source'] != 'schedule':
-            stats['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
-            stats['schedules'] = self.get_project_schedules()
-            stats['packages'] = self.get_packages_versions()
+        stats['project_id'] = self.project.id
 
         return stats
+
+    def get_project_info(self, pipeline,
+                         force_run: bool,
+                         requirements_in_path: str,
+                         requirements_txt_path: str) -> dict:
+        data = dict()
+        ref = self.get_pipeline_ref(pipeline)
+
+        if force_run:
+            data['project_id'] = self.project.id
+            data['project_name'] = self.project.path_with_namespace
+            jobs = self.get_jobs(pipeline)
+            data['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
+            data['packages'] = self.get_packages_versions(requirements_in_path, requirements_txt_path)
+            data['schedules'] = self.get_project_schedules()
+
+        elif ref == 'master' and pipeline.attributes['source'] != 'schedule':
+            commited_files = self.get_commited_files(pipeline)
+
+            match_file_gitlab_ci = self.find_first_match_in_list(".gitlab", commited_files)
+            if match_file_gitlab_ci:
+                jobs = self.get_jobs(pipeline)
+                data['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
+
+            match_file_requirements = self.find_first_match_in_list("requirements", commited_files)
+            if match_file_requirements:
+                data['packages'] = self.get_packages_versions(requirements_in_path, requirements_txt_path)
+
+            if not match_file_requirements and not match_file_gitlab_ci:
+                return dict()
+
+            data['project_id'] = self.project.id
+            data['project_name'] = self.project.path_with_namespace
+            data['schedules'] = self.get_project_schedules()
+
+        return data

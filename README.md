@@ -17,9 +17,9 @@ the total time may skyrocket 🚀
    ```shell
      docker image build -t metrics-collector-client .; 
     ```
-2. Run worker
+2. Run worker in one of two modes:
 
-    For specified pipeline use parameter `--pipeline-id`, for multipal pipelines use `--per-page` and `--page` parameters
+    - Mode #1: saving pipeline metrics. For specified pipeline use parameter `--pipeline-id`, for multipal pipelines use `--per-page` and `--page` parameters
     ```shell
      docker run metrics-collector-client \
      --save-endpoint http://web:5000/save_metrics \
@@ -31,6 +31,19 @@ the total time may skyrocket 🚀
      --jobs-e2e-blacklist test:e2e:lint coverage lint \
      --pipeline-id 1  # for specified pipeline
      # --per-page 10 --page 1
+    ```
+   - Mode #2: saving information about jobs, schedules, and project packages.
+    ```shell
+   docker run metrics-collector-client \
+   --save-endpoint http://web:5000/save_project_info \
+   --project-id 123 \
+   --pipeline-id 1 \
+   --private-token <PRIVATE-TOKEN> \
+   --stage-e2e-metrics test-metrics \
+   --requirements_in_path tests/e2e/requirements.in \
+   --requirements_txt_path tests/e2e/requirements.txt \
+   --team <YOUR-REAL-TEAM-NAME>
+   # --force
     ```
    For local debug (server and client running on same machine) use `--network host` parameter for run
    ```shell
