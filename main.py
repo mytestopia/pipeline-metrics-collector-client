@@ -35,17 +35,21 @@ def collect_project_info(gitlab: GitLab,
                          team: str,
                          force_run: bool,
                          requirements_txt_path: str,
-                         requirements_in_path: str) -> None:
+                         requirements_in_path: str,
+                         gitlab_ci_path: str) -> None:
     pipeline = gitlab.get_pipeline_by_id(pipeline_id)
-    data = gitlab.get_project_info(pipeline, force_run, requirements_in_path, requirements_txt_path)
+    data = gitlab.get_project_info(pipeline, force_run, requirements_in_path, requirements_txt_path, gitlab_ci_path)
 
-    if data:
-        data['team'] = team
-        response = post(save_endpoint,
-                        data=dumps(data),
-                        headers={'content-type': 'application/json'})
-        print(data, response)
+    if not data:
+        print("Nothing to send")
+        return None
 
+    data['team'] = team
+    print("Data to send:", data)
+    response = post(save_endpoint,
+                    data=dumps(data),
+                    headers={'content-type': 'application/json'})
+    print(response)
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description='Trigger a GitLab Pipeline and wait for its completion')
@@ -113,6 +117,12 @@ if __name__ == '__main__':
                          'when the branch is the master and the pipeline is not running on schedule.'
                          'Default: tests/e2e/requirements.in')
 
+    ap.add_argument('--gitlab_ci_path', nargs='?', type=str, default='.gitlab-ci.yml',
+                    help='Set path to .gitlab-ci file or dir. '
+                         'Works with --save-endpoint=__some_url__/save_project_info and '
+                         'when the branch is the master and the pipeline is not running on schedule.'
+                         'Default: .gitlab-ci.yml')
+
     args = ap.parse_args()
     args_dict = dict()
     for key in vars(args):
@@ -164,4 +174,5 @@ if __name__ == '__main__':
                              team=args_dict['team'],
                              force_run=args_dict['force'],
                              requirements_in_path=args_dict['requirements_in_path'],
-                             requirements_txt_path=args_dict['requirements_txt_path'])
+                             requirements_txt_path=args_dict['requirements_txt_path'],
+                             gitlab_ci_path=args_dict['gitlab_ci_path'])
