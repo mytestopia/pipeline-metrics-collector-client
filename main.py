@@ -13,7 +13,7 @@ def collect_statistic_for_pipeline(gitlab: GitLab,
     if data:
         data['project'] = project_name
         data['pipeline_id'] = pipeline_id
-        response = post(save_endpoint,
+        response = post(save_endpoint + '/save_metrics',
                         data=dumps(data),
                         headers={'content-type': 'application/json'})
         print(pipeline_id, response)
@@ -46,7 +46,7 @@ def collect_project_info(gitlab: GitLab,
 
     data['team'] = team
     print("Data to send:", data)
-    response = post(save_endpoint,
+    response = post(save_endpoint + '/save_project_info',
                     data=dumps(data),
                     headers={'content-type': 'application/json'})
     print(response)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     ap.add_argument('--page', nargs='?', type=int, default=1)
 
     ap.add_argument('--stage-build', nargs='?', type=str, default='build',
-                    help='Name of stage, where e2e image builds. Default: build')
+                    help='Name of stage, where e2e image builds. Works with --mode=metrics. Default: build')
     ap.add_argument('--jobs-build', nargs='*', default=['build-e2e'],
                     help='Name of jobs where e2e image builds. Default: build-e2e. '
                          'Can be multiple!')
@@ -77,49 +77,54 @@ if __name__ == '__main__':
 
     ap.add_argument('--jobs-e2e-blacklist', nargs='*', default=['coverage', 'e2e-lint', 'e2e:lint', 'unit'],
                     help='Name of jobs in stage to be excluded from statistics '
-                         '(for example jobs with unit tests with linter). '
+                         '(for example jobs with unit tests with linter). Works with --mode=metrics.'
                          'Default: coverage e2e-lint e2e:lint unit. '
                          'Can be multiple!')
 
     ap.add_argument('--job-steps-names', nargs='*', default=['up', 'e2e'],
-                    help='Step names in job to track.'
+                    help='Step names in job to track. Works with --mode=metrics.'
                          'Default: up e2e.'
                          'Supported steps: pull up e2e.'
                          'Save steps in running order!')
 
     ap.add_argument('--optimistic', action='store_true',
-                    help='Not fail metrics collecting if some of jobs don\'t have any')
+                    help='Not fail metrics collecting if some of jobs don\'t have any.'
+                         'Works with --mode=metrics.')
+
+    ap.add_argument('--mode', nargs='?', type=str,  default='metrics',
+                    help='Sets one of two modes for running the command which saves metrics or project-info.'
+                         'Default: metrics.')
 
     ap.add_argument('--force', action="store_true",
                     help='Runs the command ignoring all restrictions. '
-                         'Works with --save-endpoint=__some_url__/save_project_info.')
+                         'Works with --mode=project-info.')
 
     ap.add_argument('--team', nargs='?', type=str,
                     help='Name of your real team that owns the project '
-                         'Works with --save-endpoint=__some_url__/save_project_info and '
+                         'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule.')
 
     ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='test-metrics',
                     help='Name of stage, where e2e test statistics are collected. '
-                         'Works with --save-endpoint=__some_url__/save_project_info and '
+                         'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule. '
                          'Default: test-metrics')
 
     ap.add_argument('--requirements_txt_path', nargs='?', type=str, default='tests/e2e/requirements.txt',
                     help='Set path to requirements.txt file. '
-                         'Works with --save-endpoint=__some_url__/save_project_info and '
+                         'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule.'
                          'Default: tests/e2e/requirements.txt')
 
     ap.add_argument('--requirements_in_path', nargs='?', type=str, default='tests/e2e/requirements.in',
                     help='Set path to requirements.in file. '
-                         'Works with --save-endpoint=__some_url__/save_project_info and '
+                         'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule.'
                          'Default: tests/e2e/requirements.in')
 
     ap.add_argument('--gitlab_ci_path', nargs='?', type=str, default='.gitlab-ci.yml',
                     help='Set path to .gitlab-ci file or dir. '
-                         'Works with --save-endpoint=__some_url__/save_project_info and '
+                         'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule.'
                          'Default: .gitlab-ci.yml')
 
@@ -129,6 +134,7 @@ if __name__ == '__main__':
         value = getattr(args, key)
         args_dict[key] = value
 
+    mode = args_dict['mode']
     save_endpoint = args_dict['save_endpoint']
 
     project_id = args_dict['project_id']
@@ -155,7 +161,7 @@ if __name__ == '__main__':
         stage_e2e_metrics=args_dict['stage_e2e_metrics'],
     )
 
-    if 'save_metrics' in save_endpoint:
+    if mode == 'metrics':
         if args_dict['pipeline_id']:
             collect_statistic_for_pipeline(gitlab,
                                            save_endpoint=save_endpoint,
@@ -167,7 +173,7 @@ if __name__ == '__main__':
                                project_name=project_name,
                                per_page=args_dict['per_page'],
                                page=args_dict['page'])
-    elif 'save_project_info' in save_endpoint:
+    elif mode == 'project-info':
         collect_project_info(gitlab,
                              save_endpoint=save_endpoint,
                              pipeline_id=args_dict['pipeline_id'],

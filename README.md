@@ -22,7 +22,8 @@ the total time may skyrocket 🚀
     - Mode #1: saving pipeline metrics. For specified pipeline use parameter `--pipeline-id`, for multipal pipelines use `--per-page` and `--page` parameters
     ```shell
      docker run metrics-collector-client \
-     --save-endpoint http://web:5000/save_metrics \
+     --save-endpoint http://web:5000 \
+     --mode metrics \
      --private-token <PRIVATE-TOKEN> \
      --project-id 123 \
      --project-name test/project \
@@ -35,7 +36,8 @@ the total time may skyrocket 🚀
    - Mode #2: saving information about jobs, schedules, and project packages.
     ```shell
    docker run metrics-collector-client \
-   --save-endpoint http://web:5000/save_project_info \
+   --save-endpoint http://web:5000 \
+   --mode project-info \
    --project-id 123 \
    --pipeline-id 1 \
    --private-token <PRIVATE-TOKEN> \
