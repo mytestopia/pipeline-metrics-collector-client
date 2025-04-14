@@ -103,11 +103,11 @@ if __name__ == '__main__':
                          'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule.')
 
-    ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='test-metrics',
+    ap.add_argument('--stage-e2e-metrics', nargs='?', type=str, default='e2e-utils',
                     help='Name of stage, where e2e test statistics are collected. '
                          'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule. '
-                         'Default: test-metrics')
+                         'Default: e2e-utils')
 
     ap.add_argument('--requirements_txt_path', nargs='?', type=str, default='tests/e2e/requirements.txt',
                     help='Set path to requirements.txt file. '
