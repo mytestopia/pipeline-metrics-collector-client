@@ -35,10 +35,9 @@ def collect_project_info(gitlab: GitLab,
                          team: str,
                          force_run: bool,
                          requirements_txt_path: str,
-                         requirements_in_path: str,
                          gitlab_ci_path: str) -> None:
     pipeline = gitlab.get_pipeline_by_id(pipeline_id)
-    data = gitlab.get_project_info(pipeline, force_run, requirements_in_path, requirements_txt_path, gitlab_ci_path)
+    data = gitlab.get_project_info(pipeline, force_run, requirements_txt_path, gitlab_ci_path)
 
     if not data:
         print("Nothing to send")
@@ -116,12 +115,6 @@ if __name__ == '__main__':
                          'when the branch is the master and the pipeline is not running on schedule.'
                          'Default: tests/e2e/requirements.txt')
 
-    ap.add_argument('--requirements_in_path', nargs='?', type=str, default='tests/e2e/requirements.in',
-                    help='Set path to requirements.in file. '
-                         'Works with --mode=project-info and '
-                         'when the branch is the master and the pipeline is not running on schedule.'
-                         'Default: tests/e2e/requirements.in')
-
     ap.add_argument('--gitlab_ci_path', nargs='?', type=str, default='.gitlab-ci.yml',
                     help='Set path to .gitlab-ci file or dir. '
                          'Works with --mode=project-info and '
@@ -179,6 +172,5 @@ if __name__ == '__main__':
                              pipeline_id=args_dict['pipeline_id'],
                              team=args_dict['team'],
                              force_run=args_dict['force'],
-                             requirements_in_path=args_dict['requirements_in_path'],
                              requirements_txt_path=args_dict['requirements_txt_path'],
                              gitlab_ci_path=args_dict['gitlab_ci_path'])

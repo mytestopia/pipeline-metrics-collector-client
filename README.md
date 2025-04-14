@@ -43,7 +43,6 @@ the total time may skyrocket 🚀
    --private-token <PRIVATE-TOKEN> \
    --stage-e2e e2e \
    --stage-e2e-metrics test-metrics \
-   --requirements_in_path tests/e2e/requirements.in \
    --requirements_txt_path tests/e2e/requirements.txt \
    --gitlab_ci_path .gitlab-ci.yml \
    --team <YOUR-REAL-TEAM-NAME>

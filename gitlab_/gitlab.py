@@ -4,8 +4,7 @@ import gitlab
 from gitlab_ import get_job_stats_by_trace
 from gitlab.v4.objects import ProjectPipelineJob, ProjectJob
 import base64
-from helpers.parse_packages_from_requirements import parse_packages_names_from_requirements_in, \
-    parse_packages_info_from_requirements_txt
+from helpers.parse_packages_from_requirements import parse_packages_info_from_requirements_txt
 
 
 class ErrorLogger:
@@ -148,20 +147,13 @@ class GitLab:
             print(f"Failed to fetch file ({file_path}): {e}")
             return None
 
-    def get_packages_versions(self, requirements_in_path: str, requirements_txt_path: str) -> dict:
-        req_in_file_content = self.get_gitlab_file_content(requirements_in_path)
+    def get_packages_versions(self, requirements_txt_path: str) -> dict:
         req_txt_file_content = self.get_gitlab_file_content(requirements_txt_path)
 
         if not req_txt_file_content:
             return dict()
 
-        packages_names = parse_packages_names_from_requirements_in(
-            file_content=req_in_file_content) if req_in_file_content else None
-
-        packages_with_versions = parse_packages_info_from_requirements_txt(
-            file_content=req_txt_file_content, included_packages=packages_names
-        )
-
+        packages_with_versions = parse_packages_info_from_requirements_txt(file_content=req_txt_file_content)
         return packages_with_versions
 
     def get_commited_files(self, pipeline) -> list[str]:
@@ -221,7 +213,6 @@ class GitLab:
 
     def get_project_info(self, pipeline,
                          force_run: bool,
-                         requirements_in_path: str,
                          requirements_txt_path: str,
                          gitlab_ci_path: str) -> dict:
         data = dict()
@@ -232,7 +223,7 @@ class GitLab:
             data['project_name'] = self.project.path_with_namespace
             jobs = self.get_jobs(pipeline)
             data['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
-            data['packages'] = self.get_packages_versions(requirements_in_path, requirements_txt_path)
+            data['packages'] = self.get_packages_versions(requirements_txt_path)
             data['schedules'] = self.get_project_schedules()
 
         elif ref == 'master' and pipeline.attributes['source'] != 'schedule':
@@ -245,7 +236,7 @@ class GitLab:
 
             match_file_requirements = self.find_first_match_in_list("requirements", commited_files)
             if match_file_requirements:
-                data['packages'] = self.get_packages_versions(requirements_in_path, requirements_txt_path)
+                data['packages'] = self.get_packages_versions(requirements_txt_path)
 
             if not match_file_requirements and not match_file_gitlab_ci:
                 return dict()
