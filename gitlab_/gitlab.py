@@ -213,8 +213,7 @@ class GitLab:
 
     def get_project_info(self, pipeline,
                          force_run: bool,
-                         requirements_txt_path: str,
-                         gitlab_ci_path: str) -> dict:
+                         requirements_txt_path: str) -> dict:
         data = dict()
         ref = self.get_pipeline_ref(pipeline)
 
@@ -229,17 +228,12 @@ class GitLab:
         elif ref == 'master' and pipeline.attributes['source'] != 'schedule':
             commited_files = self.get_commited_files(pipeline)
 
-            match_file_gitlab_ci = self.find_first_match_in_list(gitlab_ci_path, commited_files)
-            if match_file_gitlab_ci:
-                jobs = self.get_jobs(pipeline)
-                data['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
+            jobs = self.get_jobs(pipeline)
+            data['all_e2e_jobs'] = self.filter_all_e2e_jobs_names(jobs)
 
             match_file_requirements = self.find_first_match_in_list("requirements", commited_files)
             if match_file_requirements:
                 data['packages'] = self.get_packages_versions(requirements_txt_path)
-
-            if not match_file_requirements and not match_file_gitlab_ci:
-                return dict()
 
             data['project_id'] = self.project.id
             data['project_name'] = self.project.path_with_namespace
