@@ -1,6 +1,5 @@
 import argparse
 from json import dumps
-from pprint import pprint
 
 import requests
 from requests import post
