@@ -1,8 +1,10 @@
-from gitlab_ import GitLab
-from requests import post
+import argparse
 from json import dumps
 
-import argparse
+import requests
+from requests import post
+
+from gitlab_ import GitLab
 
 
 def collect_statistic_for_pipeline(gitlab: GitLab,
@@ -34,10 +36,9 @@ def collect_project_info(gitlab: GitLab,
                          pipeline_id: int,
                          team: str,
                          force_run: bool,
-                         requirements_txt_path: str,
-                         gitlab_ci_path: str) -> None:
+                         requirements_txt_path: str) -> None:
     pipeline = gitlab.get_pipeline_by_id(pipeline_id)
-    data = gitlab.get_project_info(pipeline, force_run, requirements_txt_path, gitlab_ci_path)
+    data = gitlab.get_project_info(pipeline, force_run, requirements_txt_path)
 
     if not data:
         print("Nothing to send")
@@ -49,6 +50,11 @@ def collect_project_info(gitlab: GitLab,
                     data=dumps(data),
                     headers={'content-type': 'application/json'})
     print(response)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print("Error:", response.text)
+
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description='Trigger a GitLab Pipeline and wait for its completion')
@@ -90,7 +96,7 @@ if __name__ == '__main__':
                     help='Not fail metrics collecting if some of jobs don\'t have any.'
                          'Works with --mode=metrics.')
 
-    ap.add_argument('--mode', nargs='?', type=str,  default='metrics',
+    ap.add_argument('--mode', nargs='?', type=str, default='metrics',
                     help='Sets one of two modes for running the command which saves metrics or project-info.'
                          'Default: metrics.')
 
@@ -114,12 +120,6 @@ if __name__ == '__main__':
                          'Works with --mode=project-info and '
                          'when the branch is the master and the pipeline is not running on schedule.'
                          'Default: tests/e2e/requirements.txt')
-
-    ap.add_argument('--gitlab_ci_path', nargs='?', type=str, default='.gitlab-ci.yml',
-                    help='Set path to .gitlab-ci file or dir. '
-                         'Works with --mode=project-info and '
-                         'when the branch is the master and the pipeline is not running on schedule.'
-                         'Default: .gitlab-ci.yml')
 
     args = ap.parse_args()
     args_dict = dict()
@@ -172,5 +172,4 @@ if __name__ == '__main__':
                              pipeline_id=args_dict['pipeline_id'],
                              team=args_dict['team'],
                              force_run=args_dict['force'],
-                             requirements_txt_path=args_dict['requirements_txt_path'],
-                             gitlab_ci_path=args_dict['gitlab_ci_path'])
+                             requirements_txt_path=args_dict['requirements_txt_path'])
