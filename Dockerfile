@@ -1,4 +1,5 @@
-FROM python:3.9-alpine
+ARG PYTHON_IMAGE_VERSION=python:3.9-alpine
+FROM ${PYTHON_IMAGE_VERSION}
 
 RUN pip3 install pip --upgrade
 
